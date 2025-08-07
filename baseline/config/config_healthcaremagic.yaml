@@ -1,0 +1,73 @@
+# Global configuration
+global:
+  target_model: "/path/to/your/model"
+  
+  datasets:
+    - healthcaremagic: "/path/to/your/dataset"
+      split: "train"
+
+  batch_size: 16
+  device: "cuda:0"
+
+  fpr_thresholds:
+    - 0.01
+  n_bootstrap_samples: 10
+
+bag_of_words:
+  module: bag_of_words
+  test_size: 0.3
+  min_df: 0.05
+  n_estimators: 100
+  max_depth: 2
+  min_samples_leaf: 5
+  seed: 42
+
+loss:
+  module: loss
+
+zlib:
+  module: zlib
+
+spv:
+  module: spv
+  device: 'cuda:1'
+  batch_size: 16
+  mask_model: 'google-t5/t5-base'
+  mask_device: 'cuda:1'          
+  span_length: 1                 
+  pct: 0.2                       
+  ceil_pct: false                
+  buffer_size: 1                 
+  mask_top_p: 1.0                # top-p sampling for T5 generation
+  sample_number: 10              # Number of perturbations per example
+  idx_rate: 0.1                 # Proportion of tokens skipped from perturbation
+  calibration: True              # Enable calibration with reference model
+  reference_model: "meta-llama/Llama-3.2-3B-Instruct"         
+  reference_device: "cuda:1"       
+
+
+neighborhood:
+  module: neighborhood
+  batch_size: 1
+  mlm_model: 'roberta-base'
+  n_neighbors: 20
+  top_k: 5
+  is_scale_embeds: true
+  device: 'cuda:0'
+
+minkprob:
+  module: minkprob
+  k: 20
+  batch_size: 1
+
+minkplusplus:
+  module: minkplusplus
+  k: 20
+  batch_size: 1
+
+reference:
+  module: reference
+  ref_model: "/path/to/your/reference_model"
+  device: "cuda:0"
+  batch_size: 16 
+

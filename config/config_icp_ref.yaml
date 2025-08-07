@@ -1,0 +1,42 @@
+# Example configuration for MIA Attack Framework
+
+# Model configuration
+model:
+  target_model_path:  "/path/to/your/model"
+  reference_model_path: null  # Optional
+  device: "cuda:0"
+  max_prompt_tokens: 4096
+  torch_dtype: "float16"
+
+# Data configuration
+data:
+  train_data_path: "/path/to/your/train_data.json"
+  test_data_path: "/path/to/your/test_data.json"
+  data_format: "pretrain"  # Changed from "instruction" to "pretrain"
+  test_size: 500
+  random_seed: 42
+  enable_shuffle: true # Set to false to use first N samples without shuffling
+
+
+similarity_based_icp:
+  enabled: true
+  prefix_pool_source: "/path/to/your/prefix_pool_source.json"  # or path to custom dataset
+  top_k: 1
+  max_prefix_candidates: 10
+  aggregation_strategy: "max" 
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+
+
+self_perturbation_icp:
+  enabled: false
+  perturbation_file_path: null
+  top_k: 5
+  aggregation_strategy: "mean"
+
+# Experiment configuration
+experiment:
+  output_dir: "./results"
+  cache_dir: "./cache"
+  experiment_name: null  # Auto-generated if null
+  save_detailed_results: true
+  fpr_thresholds: [0.001,0.01, 0.05, 0.1]  # FPR thresholds for TPR computation 
