@@ -1,6 +1,6 @@
-# ICP-MIA: In-Context Prefix Membership Inference Attack
+# ICP-MIA
 
-This repository implements the In-Context Prefix (ICP) Membership Inference Attack, a novel approach for detecting whether specific data samples were used to train Large Language Models (LLMs). The ICP-MIA leverages in-context learning capabilities to perform membership inference without requiring model modifications or gradient access.
+This repository implements the In-Context Probing (ICP) - Membership Inference Attack, a novel approach for detecting whether specific data samples were used to train Large Language Models (LLMs). The ICP-MIA leverages in-context learning capabilities to perform membership inference without requiring model modifications or gradient access.
 
 ## Overview
 
