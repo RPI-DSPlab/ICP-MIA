@@ -1,0 +1,26 @@
+
+# Core dependencies
+torch==2.5.1
+transformers==4.57.0
+datasets==4.1.1
+sentence-transformers==5.1.1
+
+# Scientific computing
+numpy==1.26.4
+pandas==2.3.3
+scikit-learn==1.7.2
+
+# FAISS for similarity search
+faiss-gpu==1.9.0  # Use faiss-cpu if no GPU available
+
+# Visualization
+matplotlib==3.7.5
+seaborn
+matplotlib-venn==1.1.2
+
+# Utilities
+pyyaml
+tqdm
+tabulate
+
+

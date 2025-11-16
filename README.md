@@ -1,39 +1,81 @@
 # ICP-MIA
 
-This repository implements the In-Context Probing (ICP) - Membership Inference Attack, a novel approach for detecting whether specific data samples were used to train Large Language Models (LLMs). The ICP-MIA leverages in-context learning capabilities to perform membership inference without requiring model modifications or gradient access.
-
-## Overview
-
-ICP-MIA is a black-box membership inference attack that uses carefully crafted in-context prefixes to probe whether target examples were present in the model's training data. The attack works by:
-
-1. **Similarity-based ICP**: Finding semantically similar examples from a reference dataset to use as in-context prefixes
-2. **Self-perturbation ICP**: Using perturbed versions of the target example itself as prefixes
-
-## Features
-
-- **Two Attack Variants**: Similarity-based and self-perturbation ICP approaches
-- **Flexible Configuration**: YAML-based configuration system for easy experimentation
-- **Multiple Data Formats**: Support for both instruction-tuning and pre-training data formats
-- **Comprehensive Evaluation**: Built-in metrics including AUC and TPR@FPR calculations
-- **Order Effect Analysis**: Optional analysis of training order effects on membership inference
-- **Caching System**: Efficient caching for embeddings and intermediate results
+This repository implements ICP-MIA (In-Context Probing Membership Inference Attack), a novel black-box attack framework for detecting whether specific data samples were used during fine-tuning of LLMs. Our method introduces the Optimization Gap—the disparity in remaining loss-reduction potential between member and non-member samples—as a fundamental membership signal. At convergence, member samples exhibit minimal remaining optimization potential, while non-member samples retain significant room for further improvement.
 
 ## Installation
 
 ### Requirements
 
 ```bash
-pip install torch transformers datasets sentence-transformers faiss-cpu numpy scikit-learn matplotlib pyyaml tqdm
+pip install torch transformers datasets sentence-transformers faiss-cpu numpy scikit-learn matplotlib pyyaml tqdm faiss-gpu
 ```
 
-For GPU support with FAISS:
+### Install LLama-Factory
+```
+git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
+cd LLaMA-Factory
+pip install -e ".[torch,metrics]" --no-build-isolation
+```
+
+### Prepare Dataset
+
+#### Step 1: Download and Split Data
+
+Run the following command to download the HealthCareMagic-100k dataset and split it:
+
 ```bash
-pip install faiss-gpu
+python prepare_data.py
 ```
 
-### Optional Dependencies
-- `pandas`: For additional data processing
-- `seaborn`: For enhanced plotting capabilities
+This will create the following files in `./data/healthcaremagic/`:
+- `healthcaremagic_train.json` (80% of data) - for model training
+- `healthcaremagic_val.json` (10% of data) - for validation
+- `healthcaremagic_test.json` (10% of data) - for testing
+- `healthcaremagic_attack.json` (1000 members + 1000 non-members with labels) - for attack evaluation 
+
+#### Step 2: Configure LLaMA-Factory Dataset
+
+Copy the data files to LLaMA-Factory's data directory:
+
+```bash
+cp ./data/healthcaremagic/*.json ./LLaMA-Factory/data/
+```
+
+Then add the following entries to `./LLaMA-Factory/data/dataset_info.json`:
+
+```json
+  "healthcaremagic_train": {
+    "file_name": "healthcaremagic_train.json"
+  },
+  "healthcaremagic_val": {
+    "file_name": "healthcaremagic_val.json"
+  },
+  "healthcaremagic_test": {
+    "file_name": "healthcaremagic_test.json"
+  }
+```
+
+### Prepare Target Models
+
+Train your target model using LLaMA-Factory:
+
+```bash
+llamafactory-cli train ./config/config_training.yaml
+```
+
+### Prepare Attack Dataset
+
+Generate perturbations for the attack dataset created by `prepare_data.py`:
+
+```bash
+python generate_perturbations.py convert \
+  --input ./data/healthcaremagic/healthcaremagic_attack.json \
+  --output ./data/healthcaremagic/healthcaremagic_attack_perturbed.json \
+  --mask_rate 0.5 \
+  --num_perturbations 20
+```
+
+The output will be in `target_example` format with `mask_perturbations` and `label` fields.
 
 ## Quick Start
 
@@ -59,7 +101,7 @@ model:
 data:
   train_data_path: "/path/to/your/train_data.json"
   test_data_path: "/path/to/your/test_data.json"
-  data_format: "instruction"  # or "pretrain"
+  data_format: "instruction"  # or "text"
 ```
 
 ### 2. Running the Attack
@@ -70,19 +112,11 @@ python icp_mia_attack.py --config your_config.yaml
 
 ## Configuration Options
 
-### Model Configuration
-- `target_model_path`: Path to the target model to attack
-- `reference_model_path`: Optional reference model for comparison
-- `device`: Computing device (cuda:0, cpu, etc.)
-- `max_prompt_tokens`: Maximum tokens in the prompt
-- `torch_dtype`: Model precision (float16, float32)
-
 ### Data Configuration
-- `train_data_path`: Path to training data (JSON format)
+- `train_data_path`: Path to training data (JSON format as shown before)
 - `test_data_path`: Path to test data for evaluation
 - `data_format`: Format type ("instruction" or "pretrain")
 - `test_size`: Number of test samples to evaluate
-- `member_detection_strategy`: How to identify members ("auto", "source_file", "content_match")
 
 ### Similarity-based ICP Configuration
 - `enabled`: Enable/disable similarity-based attack
@@ -90,63 +124,21 @@ python icp_mia_attack.py --config your_config.yaml
 - `top_k`: Number of top similar prefixes to use
 - `max_prefix_candidates`: Maximum candidates to consider
 - `aggregation_strategy`: How to aggregate scores ("max", "min", "mean", "median")
-- `embedding_model`: Sentence transformer model for embeddings
+- `embedding_model`: Sentence transformer model for calculating similarity
 
 ### Self-perturbation ICP Configuration
 - `enabled`: Enable/disable self-perturbation attack
 - `perturbation_file_path`: Path to file containing perturbations
-- `perturbation_key`: JSON key for perturbation data
 - `top_k`: Number of perturbations to use
 - `aggregation_strategy`: Score aggregation method
-
-## Data Formats
-
-### Instruction Format
-For instruction-tuning data:
-```json
-[
-  {
-    "instruction": "Translate the following text to French:",
-    "input": "Hello, how are you?",
-    "output": "Bonjour, comment allez-vous?"
-  }
-]
-```
-
-### Pretrain Format
-For pre-training data:
-```json
-[
-  {
-    "text": "The quick brown fox jumps over the lazy dog."
-  }
-]
-```
 
 ## Output
 
 The attack generates detailed results including:
 - **AUC Score**: Area under the ROC curve
 - **TPR@FPR**: True Positive Rate at specified False Positive Rates
-- **Detailed Results**: Individual sample scores and predictions
-- **Visualizations**: ROC curves and score distributions
 
 Results are saved in the specified output directory with timestamps.
-
-## Order Effect Analysis
-
-Enable order effect analysis to study how the position of data in training affects membership inference:
-
-```yaml
-experiment:
-  order_effect_enabled: true
-  order_effect_partitions: 10
-  order_effect_sample_size: 500
-```
-
-This analyzes whether examples seen earlier or later during training are more susceptible to membership inference.
-
-## Advanced Usage
 
 ### Custom Prefix Pools
 You can provide custom prefix pools for similarity-based attacks:
@@ -156,6 +148,4 @@ similarity_based_icp:
   prefix_pool_source: "/path/to/custom/prefix_pool.json"
 ```
 
-## Contributing
-
-This is research code accompanying an anonymous submission. Contributions and feedback are welcome. 
+ 

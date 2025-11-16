@@ -583,6 +583,10 @@ class MIAAttacker:
         members = []
         nonmembers = []
         all_examples = []  # For force_balanced_split fallback
+        has_labels = any("label" in item for item in self.perturbation_icp.perturbation_data)
+        
+        if has_labels:
+            logger.info("Using 'label' field to identify members (label=1) and non-members (label=0)")
         
         for item in self.perturbation_icp.perturbation_data:
             target = item.get("target_example", {})
@@ -605,14 +609,19 @@ class MIAAttacker:
             all_examples.append(example)  # Store for potential fallback
             
             # Determine if this is a member or non-member
-            # Set source file information for judgement
-            self._current_example_source_file = item.get("source_file", "")
-            
-            # Check if this example exists in training data
-            is_member = self._is_training_example(example)
-            
-            # Clear the source file information after use
-            self._current_example_source_file = None
+            # Priority 1: Use label field if available
+            if "label" in item:
+                is_member = (item["label"] == 1)
+            else:
+                # Priority 2: Use heuristic detection
+                # Set source file information for judgement
+                self._current_example_source_file = item.get("source_file", "")
+                
+                # Check if this example exists in training data
+                is_member = self._is_training_example(example)
+                
+                # Clear the source file information after use
+                self._current_example_source_file = None
             
             if is_member:
                 members.append(example)

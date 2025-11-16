@@ -2,7 +2,7 @@
 
 # Model configuration
 model:
-  target_model_path:  "/path/to/your/model"
+  target_model_path:  "./LLaMA-Factory/saves/llama3.2-3b-Instruct/sft/healthcaremagic"
   reference_model_path: null
   device: "cuda:0"
   max_prompt_tokens: 4096
@@ -11,8 +11,8 @@ model:
 
 # Enhanced Data configuration with compatibility options
 data:
-  train_data_path: "/path/to/your/train_data.json"
-  test_data_path: "/path/to/your/test_data.json"
+  train_data_path: "./data/healthcaremagic_train.json"
+  test_data_path: "./data/healthcaremagic_test.json"
   data_format: "instruction"
   test_size: 500  # Smaller test size for perturbation attacks
   random_seed: 42
@@ -27,7 +27,7 @@ similarity_based_icp:
 self_perturbation_icp:
   perturbation_key: "mask_perturbations"
   enabled: true
-  perturbation_file_path: "/path/to/your/perturbation_file.json"
+  perturbation_file_path: "./data/healthcaremagic/healthcaremagic_attack_perturbed.json"
   top_k: 5  
   aggregation_strategy: "mean"  # Average across perturbations
 
