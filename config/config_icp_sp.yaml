@@ -28,8 +28,8 @@ self_perturbation_icp:
   perturbation_key: "mask_perturbations"
   enabled: true
   perturbation_file_path: "./data/healthcaremagic/healthcaremagic_attack_perturbed.json"
-  top_k: 5  
-  aggregation_strategy: "mean"  # Average across perturbations
+  top_k: 20  
+  aggregation_strategy: "mean"  
 
 # Experiment configuration
 experiment:

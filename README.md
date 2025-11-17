@@ -78,6 +78,14 @@ python generate_perturbations.py convert \
 
 The output will be in `target_example` format with `mask_perturbations` and `label` fields.
 
+### Prepaer Attack environment
+
+```
+conda create -n ICPMIA python=3.10
+
+pip install -r requirements.txt
+```
+
 ## Quick Start
 
 ### 1. Configuration
