@@ -4,16 +4,15 @@ This repository implements ICP-MIA (In-Context Probing Membership Inference Atta
 
 ## Installation
 
-### Requirements
-
-```bash
-pip install torch transformers datasets sentence-transformers faiss-cpu numpy scikit-learn matplotlib pyyaml tqdm faiss-gpu
-```
-
 ### Install LLama-Factory
 ```
+conda create -n LLamaFactory
+conda activate LLamaFactory
+
 git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
+
 cd LLaMA-Factory
+
 pip install -e ".[torch,metrics]" --no-build-isolation
 ```
 
@@ -60,7 +59,9 @@ Then add the following entries to `./LLaMA-Factory/data/dataset_info.json`:
 Train your target model using LLaMA-Factory:
 
 ```bash
-llamafactory-cli train ./config/config_training.yaml
+cd LLaMA-Factory
+
+CUDA_VISIBLE_DEVICES=0 llamafactory-cli train ../config/config_training.yaml
 ```
 
 ### Prepare Attack Dataset
@@ -71,7 +72,7 @@ Generate perturbations for the attack dataset created by `prepare_data.py`:
 python generate_perturbations.py convert \
   --input ./data/healthcaremagic/healthcaremagic_attack.json \
   --output ./data/healthcaremagic/healthcaremagic_attack_perturbed.json \
-  --mask_rate 0.5 \
+  --mask_rate 0.7 \
   --num_perturbations 20
 ```
 
@@ -147,5 +148,7 @@ You can provide custom prefix pools for similarity-based attacks:
 similarity_based_icp:
   prefix_pool_source: "/path/to/custom/prefix_pool.json"
 ```
+### Other datasets HuggingFace Path
 
+lavita/ChatDoctor-iCliniq
  
