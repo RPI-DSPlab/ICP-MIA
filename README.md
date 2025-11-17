@@ -148,7 +148,11 @@ You can provide custom prefix pools for similarity-based attacks:
 similarity_based_icp:
   prefix_pool_source: "/path/to/custom/prefix_pool.json"
 ```
-### Other datasets HuggingFace Path
 
-lavita/ChatDoctor-iCliniq
- 
+
+## Optional Datasets
+
+- **iCliniq**: `lavita/ChatDoctor-iCliniq`
+- **AlpaCare-Med-52k**: `lavita/AlpaCare-MedInstruct-52k`
+- **TOFU**: `locuslab/TOFU`
+
