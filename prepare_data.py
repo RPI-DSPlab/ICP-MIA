@@ -1,8 +1,22 @@
+import argparse
 import json
 import os
 import random
+import re
 from datasets import load_dataset
 from sklearn.model_selection import train_test_split
+
+
+PREFERRED_PREFIXES = {
+    "lavita/ChatDoctor-HealthCareMagic-100k": "healthcaremagic",
+    "lavita/AlpaCare-MedInstruct-52k": "MedInstruct",
+}
+
+
+def sanitize_prefix(name: str) -> str:
+    """Convert dataset names to filesystem friendly prefixes."""
+    slug = re.sub(r"[^a-zA-Z0-9]+", "_", name).strip("_").lower()
+    return slug or "dataset"
 
 
 def download_and_split_dataset(
@@ -12,7 +26,8 @@ def download_and_split_dataset(
     val_ratio=0.1,
     test_ratio=0.1,
     attack_samples=1000,
-    seed=42
+    seed=42,
+    file_prefix=None,
 ):
 
     print(f"Downloading dataset: {dataset_name}")
@@ -58,13 +73,21 @@ def download_and_split_dataset(
     print(f"Validation samples: {len(val_data)}")
     print(f"Test samples: {len(test_data)}")
     
+    # Determine file prefix
+    if file_prefix:
+        prefix = file_prefix
+    elif dataset_name in PREFERRED_PREFIXES:
+        prefix = PREFERRED_PREFIXES[dataset_name]
+    else:
+        prefix = sanitize_prefix(dataset_name.split("/")[-1])
+    
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
     # Save datasets to JSON files
-    train_path = os.path.join(output_dir, "healthcaremagic_train.json")
-    val_path = os.path.join(output_dir, "healthcaremagic_val.json")
-    test_path = os.path.join(output_dir, "healthcaremagic_test.json")
+    train_path = os.path.join(output_dir, f"{prefix}_train.json")
+    val_path = os.path.join(output_dir, f"{prefix}_val.json")
+    test_path = os.path.join(output_dir, f"{prefix}_test.json")
     
     print(f"\nSaving datasets to {output_dir}")
     
@@ -120,7 +143,7 @@ def download_and_split_dataset(
     print(f"  - Total: {len(attack_data)}")
     
     # Save attack dataset
-    attack_path = os.path.join(output_dir, "healthcaremagic_attack.json")
+    attack_path = os.path.join(output_dir, f"{prefix}_attack.json")
     with open(attack_path, 'w', encoding='utf-8') as f:
         json.dump(attack_data, f, ensure_ascii=False, indent=2)
     print(f"  - Saved attack dataset to: {attack_path}")
@@ -130,15 +153,37 @@ def download_and_split_dataset(
     return train_data, val_data, test_data, attack_data
 
 
-if __name__ == "__main__":
-    # Download and split the dataset
-    download_and_split_dataset(
-        dataset_name="lavita/ChatDoctor-HealthCareMagic-100k",
-        output_dir="./data/healthcaremagic",
-        train_ratio=0.8,
-        val_ratio=0.1,
-        test_ratio=0.1,
-        attack_samples=1000,
-        seed=42
+def parse_args() -> argparse.Namespace:
+    """Parse CLI arguments for dataset preparation."""
+    parser = argparse.ArgumentParser(description="Download, split, and prepare MIA datasets")
+    parser.add_argument(
+        "--dataset",
+        default="lavita/ChatDoctor-HealthCareMagic-100k",
+        help="Hugging Face dataset name, e.g. lavita/AlpaCare-MedInstruct-52k"
     )
+    parser.add_argument(
+        "--output_dir",
+        default="./data/healthcaremagic",
+        help="Directory where processed JSON files will be stored"
+    )
+    parser.add_argument("--train_ratio", type=float, default=0.8, help="Portion of data for training split")
+    parser.add_argument("--val_ratio", type=float, default=0.1, help="Portion for validation split")
+    parser.add_argument("--test_ratio", type=float, default=0.1, help="Portion for test split")
+    parser.add_argument("--attack_samples", type=int, default=1000, help="Number of members/non-members in attack set")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
+    parser.add_argument("--file_prefix", type=str, default=None, help="Optional prefix for output filenames")
+    return parser.parse_args()
 
+
+if __name__ == "__main__":
+    args = parse_args()
+    download_and_split_dataset(
+        dataset_name=args.dataset,
+        output_dir=args.output_dir,
+        train_ratio=args.train_ratio,
+        val_ratio=args.val_ratio,
+        test_ratio=args.test_ratio,
+        attack_samples=args.attack_samples,
+        seed=args.seed,
+        file_prefix=args.file_prefix
+    )

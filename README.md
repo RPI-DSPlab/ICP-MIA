@@ -6,7 +6,7 @@ This repository implements ICP-MIA (In-Context Probing Membership Inference Atta
 
 ### Install LLama-Factory
 ```
-conda create -n LLamaFactory
+conda create -n LLamaFactory python=3.10
 conda activate LLamaFactory
 
 git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
@@ -20,20 +20,25 @@ pip install -e ".[torch,metrics]" --no-build-isolation
 
 #### Step 1: Download and Split Data
 
-Run the following command to download the HealthCareMagic-100k dataset and split it:
+Run the following command to download the dataset and split it:
 
+#### Healthcaremagic:
 ```bash
-python prepare_data.py
+python prepare_data.py --dataset lavita/ChatDoctor-HealthCareMagic-100k --output_dir ./data/healthcaremagic
+```
+#### MedInstruct:
+```bash
+python prepare_data.py --dataset lavita/AlpaCare-MedInstruct-52k --output_dir ./data/MedInstruct
 ```
 
-This will create the following files in `./data/healthcaremagic/`:
+This will create the following files in `./data/healthcaremagic/` 
 - `healthcaremagic_train.json` (80% of data) - for model training
 - `healthcaremagic_val.json` (10% of data) - for validation
 - `healthcaremagic_test.json` (10% of data) - for testing
 - `healthcaremagic_attack.json` (1000 members + 1000 non-members with labels) - for attack evaluation 
 
-#### Step 2: Configure LLaMA-Factory Dataset
 
+#### Step 2: Configure LLaMA-Factory Dataset (Example for HealthcareMagic)
 Copy the data files to LLaMA-Factory's data directory:
 
 ```bash
@@ -56,12 +61,26 @@ Then add the following entries to `./LLaMA-Factory/data/dataset_info.json`:
 
 ### Prepare Target Models
 
-Train your target model using LLaMA-Factory:
+Train your target model using LLaMA-Factory on one GPU:
 
 ```bash
 cd LLaMA-Factory
 
 CUDA_VISIBLE_DEVICES=0 llamafactory-cli train ../config/config_training.yaml
+```
+
+
+
+Train your target model using LLaMa-Factory on multi-GPUs:
+
+First, uncomment the deepspeed in `config_training.yaml`
+Then:
+```bash
+cd LLaMA-Factory
+
+pip install deepspeed
+
+llamafactory-cli train ../config/config_training.yaml
 ```
 
 ### Prepare Attack Dataset
@@ -79,8 +98,10 @@ python generate_perturbations.py convert \
 The output will be in `target_example` format with `mask_perturbations` and `label` fields.
 
 ### Prepaer Attack environment
-
+We separated the attack environment from the training environment, so we need to create another attack environment.
 ```
+conda deactivate 
+
 conda create -n ICPMIA python=3.10
 
 pip install -r requirements.txt
@@ -163,4 +184,3 @@ similarity_based_icp:
 - **iCliniq**: `lavita/ChatDoctor-iCliniq`
 - **AlpaCare-Med-52k**: `lavita/AlpaCare-MedInstruct-52k`
 - **TOFU**: `locuslab/TOFU`
-

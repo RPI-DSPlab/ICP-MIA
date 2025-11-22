@@ -10,9 +10,9 @@ model:
 
 # Data configuration
 data:
-  train_data_path: "./data/healthcaremagic_train.json"
-  test_data_path: "./data/healthcaremagic_test.json"
-  data_format: "pretrain"  # Changed from "instruction" to "pretrain"
+  train_data_path: "./data/healthcaremagic/healthcaremagic_train.json"
+  test_data_path: "./data/healthcaremagic/healthcaremagic_test.json"
+  data_format: "instruction"  
   test_size: 500
   random_seed: 42
   enable_shuffle: true # Set to false to use first N samples without shuffling

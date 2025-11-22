@@ -11,8 +11,8 @@ model:
 
 # Enhanced Data configuration with compatibility options
 data:
-  train_data_path: "./data/healthcaremagic_train.json"
-  test_data_path: "./data/healthcaremagic_test.json"
+  train_data_path: "./data/healthcaremagic/healthcaremagic_train.json"
+  test_data_path: "./data/healthcaremagic/healthcaremagic_test.json"
   data_format: "instruction"
   test_size: 500  # Smaller test size for perturbation attacks
   random_seed: 42
