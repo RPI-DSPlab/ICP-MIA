@@ -75,8 +75,7 @@ class ExperimentConfig:
     order_effect_enabled: bool = False  # Enable training-order effect study
     order_effect_partitions: int = 10   # Number of contiguous splits of the training set
     order_effect_sample_size: int = 500 # Samples drawn (with fixed seed) from each partition
-    order_effect_plot_file: str = "order_effect_icp_auc.png"  # Output figure name for ICP
-    order_effect_loss_plot_file: str = "order_effect_loss_auc.png" # Output figure name for Loss attack
+    order_effect_plot_file: str = "order_effect_icp_auc.png"
 
     def __post_init__(self):
         if self.fpr_thresholds is None:
@@ -366,10 +365,8 @@ class SelfPerturbationICP:
                     is_match = True
             
             if is_match:
-                # Extract perturbations using the key from the config
                 perturbations = item.get(self.config.perturbation_key, [])
-                
-                # Gracefully handle cases where no perturbations are found.
+            
                 if not perturbations:
                     return []
                 
@@ -844,7 +841,7 @@ class MIAAttacker:
             ranking_scores.append(ranking_score)
 
         if aggregation_strategy == "max":
-            order = np.argsort(ranking_scores)[::-1]  #
+            order = np.argsort(ranking_scores)[::-1]
         elif aggregation_strategy == "min":
             order = np.argsort(ranking_scores) 
         elif aggregation_strategy == "mean" or aggregation_strategy == "median":
@@ -854,7 +851,7 @@ class MIAAttacker:
 
         prefix_block = ""
         
-        # Reserve tokens for query prompt and response (EXACTLY like old script)
+        # Reserve tokens for query prompt and response 
         reserved_tokens = len(self.tokenizer.encode(query_prompt)) + 300  # 300 tokens for response
         available_tokens = self.config.model.max_prompt_tokens - reserved_tokens
         
@@ -924,84 +921,55 @@ class MIAAttacker:
         
         return icp_score, base_ll
     
-    def run_similarity_based_icp(self) -> Tuple[List[int], List[float], List[float]]:
-        """Run similarity-based ICP-MIA attack and also return loss scores."""
+    def run_similarity_based_icp(self) -> Tuple[List[int], List[float]]:
+        """Run similarity-based ICP-MIA attack."""
         logger.info("Running similarity-based ICP-MIA...")
         
         labels = []
         icp_scores = []
-        loss_scores = []
-        loss_reduction_scores = []
-        # Process members
+        
         for example in tqdm(self.members, desc="Processing members"):
             candidates = self.similarity_icp.get_prefix_candidates(example)
-            icp_score, base_ll = self._compute_icp_score(
+            icp_score, _ = self._compute_icp_score(
                 candidates, example, self.config.similarity_based_icp.aggregation_strategy
             )
             labels.append(1)
             icp_scores.append(icp_score)
-            loss_scores.append(base_ll)
-            
-        #     ref_base_ll = -self._compute_nll_loss(
-        #         example["instruction"] + example.get("context", ""), example["response"], self.ref_model, self.ref_tokenizer
-        #     )
-        #     loss_reduction_scores.append(base_ll- ref_base_ll)
-            
-        # # Compute Spearman correlation between ICP scores and loss reduction scores
-        # from scipy.stats import spearmanr
-        # correlation, p_value = spearmanr(icp_scores, loss_reduction_scores)
         
-        # logger.info(f"Spearman correlation between ICP scores and loss reduction scores:")
-        # logger.info(f"  Correlation coefficient: {correlation:.4f}")
-        # logger.info(f"  P-value: {p_value:.4f}")
-        
-        # if p_value < 0.05:
-        #     logger.info("  The correlation is statistically significant (p < 0.05)")
-        # else:
-        #     logger.info("  The correlation is not statistically significant (p >= 0.05)")
-        
-        
-        # Process non-members
         for example in tqdm(self.nonmembers, desc="Processing non-members"):
             candidates = self.similarity_icp.get_prefix_candidates(example)
-            icp_score, base_ll = self._compute_icp_score(
+            icp_score, _ = self._compute_icp_score(
                 candidates, example, self.config.similarity_based_icp.aggregation_strategy
             )
             labels.append(0)
             icp_scores.append(icp_score)
-            loss_scores.append(base_ll)
         
-        return labels, icp_scores, loss_scores
+        return labels, icp_scores
     
-    def run_self_perturbation_icp(self) -> Tuple[List[int], List[float], List[float]]:
-        """Run self-perturbation ICP-MIA attack and also return loss scores."""
+    def run_self_perturbation_icp(self) -> Tuple[List[int], List[float]]:
+        """Run self-perturbation ICP-MIA attack."""
         logger.info("Running self-perturbation ICP-MIA...")
         
         labels = []
         icp_scores = []
-        loss_scores = []
         
-        # Process members
         for example in tqdm(self.members, desc="Processing members"):
             candidates = self.perturbation_icp.get_prefix_candidates(example)
-            icp_score, base_ll = self._compute_icp_score(
+            icp_score, _ = self._compute_icp_score(
                 candidates, example, self.config.self_perturbation_icp.aggregation_strategy
             )
             labels.append(1)
             icp_scores.append(icp_score)
-            loss_scores.append(base_ll)
         
-        # Process non-members
         for example in tqdm(self.nonmembers, desc="Processing non-members"):
             candidates = self.perturbation_icp.get_prefix_candidates(example)
-            icp_score, base_ll = self._compute_icp_score(
+            icp_score, _ = self._compute_icp_score(
                 candidates, example, self.config.self_perturbation_icp.aggregation_strategy
             )
             labels.append(0)
             icp_scores.append(icp_score)
-            loss_scores.append(base_ll)
         
-        return labels, icp_scores, loss_scores
+        return labels, icp_scores
     
     def _run_order_effect_analysis(self):
         """Evaluate the impact of training example order on AUC."""
@@ -1019,10 +987,8 @@ class MIAAttacker:
         random_seed = self.config.data.random_seed
         partition_size = len(self.train_data_raw) // partitions
         
-        order_results_icp = []  # collect per-partition metrics for ICP
-        order_results_loss = [] # collect per-partition metrics for Loss Attack
+        order_results_icp = []
         auc_values_icp = []
-        auc_values_loss = []
         
         for idx in range(partitions):
             start = idx * partition_size
@@ -1031,55 +997,34 @@ class MIAAttacker:
             if len(partition_slice) == 0:
                 logger.warning(f"Partition {idx} is empty – skipping.")
                 continue
-            # Sample `sample_size` items with fixed seed
             import random as _random
             rng = _random.Random(random_seed)
             sampled_slice = rng.sample(partition_slice, min(sample_size, len(partition_slice)))
-            # Prepare member examples without additional shuffle to preserve sampling reproducibility
             self.members = DataLoader.prepare_target_examples(
                 sampled_slice, len(sampled_slice), random_seed, self.config.data.data_format, enable_shuffle=False
             )
             
-            # Run attack (similarity-based) and get both ICP and loss scores
-            labels, icp_scores, loss_scores = self.run_similarity_based_icp()
+            labels, icp_scores = self.run_similarity_based_icp()
 
-            # --- Process ICP results ---
             metrics_icp = MIAEvaluator.compute_metrics(labels, icp_scores, self.config.experiment.fpr_thresholds)
             auc_icp = metrics_icp.get("auc", 0.0)
             auc_values_icp.append(auc_icp)
             order_results_icp.append({"partition_index": idx, **metrics_icp})
-            
-            # --- Process Loss results ---
-            metrics_loss = MIAEvaluator.compute_metrics(labels, loss_scores, self.config.experiment.fpr_thresholds)
-            auc_loss = metrics_loss.get("auc", 0.0)
-            auc_values_loss.append(auc_loss)
-            order_results_loss.append({"partition_index": idx, **metrics_loss})
 
-            logger.info(f"Partition {idx}: ICP AUC={auc_icp:.4f}, Loss AUC={auc_loss:.4f}")
+            logger.info(f"Partition {idx}: ICP AUC={auc_icp:.4f}")
         
-        # Save ICP results CSV
         results_file_icp = os.path.join(
             self.config.experiment.output_dir,
             f"{self.config.experiment.experiment_name}_order_effect_icp_results.csv"
         )
         pd.DataFrame(order_results_icp).to_csv(results_file_icp, index=False)
         logger.info(f"Order-effect ICP metrics saved to: {results_file_icp}")
-
-        # Save Loss results CSV
-        results_file_loss = os.path.join(
-            self.config.experiment.output_dir,
-            f"{self.config.experiment.experiment_name}_order_effect_loss_results.csv"
-        )
-        pd.DataFrame(order_results_loss).to_csv(results_file_loss, index=False)
-        logger.info(f"Order-effect Loss metrics saved to: {results_file_loss}")
         
-        # Plot ICP AUC trend
         plt.figure()
         plt.plot(range(len(auc_values_icp)), auc_values_icp, marker='o', label="ICP Attack")
-        plt.plot(range(len(auc_values_loss)), auc_values_loss, marker='s', label="Loss Attack")
         plt.xlabel('Partition Index')
         plt.ylabel('AUC')
-        plt.title('Training Order Effect on AUC (ICP vs. Loss)')
+        plt.title('Training Order Effect on AUC')
         plt.legend()
         plt.grid(True, linestyle='--', alpha=0.6)
         plot_path = os.path.join(self.config.experiment.output_dir, self.config.experiment.order_effect_plot_file)
@@ -1144,15 +1089,14 @@ class MIAAttacker:
         logger.info(f"Results saved to: {results_file}")
     
     def _save_detailed_results(self, attack_type: str, labels: List[int], 
-                              icp_scores: List[float], loss_scores: List[float]):
+                              icp_scores: List[float]):
         """Save detailed results including raw scores for visualization"""
         if not self.config.experiment.save_detailed_results:
             return
             
         detailed_data = {
             'labels': labels,
-            'icp_scores': icp_scores, 
-            'loss_scores': loss_scores,
+            'icp_scores': icp_scores,
             'attack_type': attack_type,
             'experiment_name': self.config.experiment.experiment_name,
             'config': {
@@ -1162,7 +1106,6 @@ class MIAAttacker:
             }
         }
         
-        # Save as JSON for easy loading
         detailed_file = os.path.join(
             self.config.experiment.output_dir,
             f"{self.config.experiment.experiment_name}_{attack_type.replace(' ', '_').replace('-', '_').lower()}_detailed_scores.json"
@@ -1178,42 +1121,23 @@ class MIAAttacker:
         logger.info(f"Starting MIA experiments: {self.config.experiment.experiment_name}")
         
         if self.config.similarity_based_icp.enabled:
-            labels, icp_scores, loss_scores = self.run_similarity_based_icp()
+            labels, icp_scores = self.run_similarity_based_icp()
             
-            # Evaluate and save ICP results
             icp_metrics = MIAEvaluator.compute_metrics(
                 labels, icp_scores, self.config.experiment.fpr_thresholds
             )
             self._save_results("Similarity-based ICP-MIA", icp_metrics)
-            
-            # Save detailed results for visualization
-            self._save_detailed_results("Similarity-based ICP-MIA", labels, icp_scores, loss_scores)
-
-            # Evaluate and save Loss-based results
-            loss_metrics = MIAEvaluator.compute_metrics(
-                labels, loss_scores, self.config.experiment.fpr_thresholds
-            )
-            self._save_results("Loss-based MIA (from ICP run)", loss_metrics)
+            self._save_detailed_results("Similarity-based ICP-MIA", labels, icp_scores)
         
         if self.config.self_perturbation_icp.enabled:
-            labels, icp_scores, loss_scores = self.run_self_perturbation_icp()
+            labels, icp_scores = self.run_self_perturbation_icp()
 
-            # Evaluate and save ICP results
             icp_metrics = MIAEvaluator.compute_metrics(
                 labels, icp_scores, self.config.experiment.fpr_thresholds
             )
             self._save_results("Self-perturbation ICP-MIA", icp_metrics)
-            
-            # Save detailed results for visualization
-            self._save_detailed_results("Self-perturbation ICP-MIA", labels, icp_scores, loss_scores)
-
-            # Evaluate and save Loss-based results
-            loss_metrics = MIAEvaluator.compute_metrics(
-                labels, loss_scores, self.config.experiment.fpr_thresholds
-            )
-            self._save_results("Loss-based MIA (from ICP run)", loss_metrics)
+            self._save_detailed_results("Self-perturbation ICP-MIA", labels, icp_scores)
         
-        # --- Training order effect analysis ---
         if self.config.experiment.order_effect_enabled:
             self._run_order_effect_analysis()
         
