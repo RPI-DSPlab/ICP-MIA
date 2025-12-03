@@ -43,6 +43,7 @@ Copy the data files to LLaMA-Factory's data directory:
 
 ```bash
 cp ./data/healthcaremagic/*.json ./LLaMA-Factory/data/
+cp ./data/MedInstruct/*.json ./LLaMA-Factory/data/
 ```
 
 Then add the following entries to `./LLaMA-Factory/data/dataset_info.json`:
@@ -58,6 +59,19 @@ Then add the following entries to `./LLaMA-Factory/data/dataset_info.json`:
     "file_name": "healthcaremagic_test.json"
   }
 ```
+
+```json
+  "MedInstruct_train": {
+    "file_name": "MedInstruct_train.json"
+  },
+  "MedInstruct_val": {
+    "file_name": "MedInstruct_train.json"
+  },
+  "MedInstruct_test": {
+    "file_name": "MedInstruct_test.json"
+  }
+```
+
 
 ### Prepare Target Models
 
@@ -123,6 +137,8 @@ cp config/config_icp_sp.yaml your_config.yaml
 
 Edit the configuration file with your model and data paths:
 
+Please use the second saved checkpoint as target model
+
 ```yaml
 model:
   target_model_path: "/path/to/your/model"
@@ -131,7 +147,6 @@ model:
 data:
   train_data_path: "/path/to/your/train_data.json"
   test_data_path: "/path/to/your/test_data.json"
-  data_format: "instruction"  # or "text"
 ```
 
 ### 2. Running the Attack

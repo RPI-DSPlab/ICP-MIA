@@ -2,7 +2,7 @@
 
 # Model configuration
 model:
-  target_model_path:  "./LLaMA-Factory/saves/llama3.2-3b-Instruct/sft/healthcaremagic"
+  target_model_path:  "path/to/target/model"
   reference_model_path: null
   device: "cuda:0"
   max_prompt_tokens: 4096
