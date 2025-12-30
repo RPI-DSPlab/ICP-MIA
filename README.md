@@ -1,6 +1,13 @@
-# ICP-MIA
+# In-Context Probing for Membership Inference in Fine-Tuned Language Models
 
-This repository implements ICP-MIA (In-Context Probing Membership Inference Attack), a novel black-box attack framework for detecting whether specific data samples were used during fine-tuning of LLMs. Our method introduces the Optimization Gap—the disparity in remaining loss-reduction potential between member and non-member samples—as a fundamental membership signal. At convergence, member samples exhibit minimal remaining optimization potential, while non-member samples retain significant room for further improvement.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17906756.svg)](https://doi.org/10.5281/zenodo.17906756) [![arXiv](https://img.shields.io/badge/arXiv-2512.16292-b31b1b.svg)](https://arxiv.org/abs/2512.16292)
+
+
+ This is a repository for the paper "In-Context Probing for Membership Inference in Fine-Tuned Language Models", accepted by NDSS 2026. This is a cleaned-up version of our [ICP-MIA framework repository](https://github.com/RPI-DSPlab/ICP-MIA) to contain only essential scripts for reproducing results in this paper. Our paper is available at [here](./paper.pdf).
+
+ ## Abstract
+
+ > Membership inference attacks (MIAs) pose a critical privacy threat to fine-tuned large language models (LLMs), especially when models are adapted to domain-specific tasks using sensitive data. While prior black-box MIA techniques rely on confidence scores or token likelihoods, these signals are often entangled with a sample’s intrinsic properties—such as content difficulty or rarity—leading to poor generalization and low signal-to-noise ratios. In this paper, we propose ICP-MIA, a novel MIA framework grounded in the theory of training dynamics, particularly the phenomenon of diminishing returns during optimization. We introduce the Optimization Gap as a fundamental signal of membership: at convergence, member samples exhibit minimal remaining loss-reduction potential, while non-members retain significant potential for further optimization. To estimate this gap in a black-box setting, we propose In-Context Probing (ICP)—a training-free method that simulates fine-tuning-like behavior via strategically constructed input contexts. We propose two probing strategies: reference-data-based (using semantically similar public samples) and self-perturbation (via masking or generation). Experiments on three tasks and multiple LLMs show that ICP-MIA significantly outperforms prior black-box MIAs, particularly at low false positive rates. We further analyze how reference data alignment, model type, PEFT configurations, and training schedules affect attack effectiveness. Our findings establish ICP-MIA as a practical and theoretically grounded framework for auditing privacy risks in deployed LLMs.
 
 ## Installation
 
